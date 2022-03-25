@@ -6,7 +6,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import (QCoreApplication, QPropertyAnimation, QDate, QDateTime, QMetaObject, QObject, QPoint, QRect, QSize, QTime, QUrl, Qt, QEvent)
 from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPainter, QPixmap, QRadialGradient,QImage)
 from PySide2.QtWidgets import *
-from PyQt5.QtCore import pyqtSignal,QThread
+from PyQt5.QtCore import pyqtSignal,QThread,QTimer
 import cv2
 import math
 from sklearn import neighbors
@@ -22,6 +22,7 @@ import imutils
 from imutils.video import VideoStream
 import threading
 from ui_untitled import Ui_Form
+from ui_notfi import Ui_Dialog
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import model_from_json
 
@@ -190,25 +191,23 @@ def show_prediction_labels_on_image(frame, predictions):
     return opencvimage
 
 
-
-
-
-
 class MainWindow(QWidget):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui=Ui_Form()
         
         self.ui.setupUi(self)
-        
+    
+
         self.Worker1 = Worker1()
-      
         self.Worker1.start()
+      
         self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
         self.Worker1.signal1.connect(self.display)
         self.Worker1.getinfo1.connect(self.getRecognationInfo)
+        self.Worker1.sendinfo.connect(self.openscreen)
+        #self.Worker1.sendinfo.disconnect(self.openscreen)
         
-   
     def display(self,name,id,img):
         self.ui.EmpName.setText(name)
         self.ui.EmpID.setText(id)
@@ -231,13 +230,57 @@ class MainWindow(QWidget):
         empphoto=QPixmap(img)
         self.ui.EmpPhoto.setPixmap(empphoto)
         self.ui.EmpPhoto.setScaledContents(True)
+        
+    def openscreen(self):
+        self.win=popupScreen()
+        #self.win.ui=Ui_Dialog()
+        #self.ui.setupUi(self.win)
+        #self.win.show()
+        self.win.popup("test","test","test","test")
+        QTimer.singleShot(3000,self.win.close)
+        #self.Worker1.sendinfo.disconnect()        
+        
+        
 
+class popupScreen(QDialog):
+    
+    def __init__(self):
+        super(popupScreen, self).__init__()
+        self.ui=Ui_Dialog()
+        self.ui.setupUi(self)
+        #self.show()
+        self.w1=Worker1()
+        #self.w1.start()
+        #self.w1.sendinfo.connect(self.popup)
+        #self.show()
+        #self.w1.sendinfo.disconnect()
+    def popup(self,name,empID,dep,title):
+        #empphoto=QPixmap(str(img))
+        #self.ui.EmpPhoto.setPixmap(empphoto)
+        #self.ui.EmpPhoto.setScaledContents(True)
+        #
+        self.ui.EmpName.setText(str(name))
+        self.ui.EmpID.setText(str(empID))
+        self.ui.EmpDep.setText(str(dep))
+        self.ui.EmpJobTitle.setText(str(title))
+        self.show()
+        
+        
+        
+        
+        
+        
+
+
+    
+    
 
      
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
     signal1= pyqtSignal(str,str,str)
     getinfo1=pyqtSignal(str,str)
+    sendinfo=pyqtSignal()
     
     def run(self):
         self.ThreadActive = True
@@ -259,6 +302,7 @@ class Worker1(QThread):
                 gray = cv2.cvtColor(Image,cv2.COLOR_RGB2GRAY)
                 #ConvertToQtFormat = QImage(Image.data, Image.shape[1], Image.shape[0], QImage.Format_RGB888)
                 #self.ImageUpdate.emit(ConvertToQtFormat)
+                #
                 
                 faces = face_cascade.detectMultiScale(gray,1.3,5)
   
@@ -268,7 +312,7 @@ class Worker1(QThread):
                     resized_face = resized_face.astype("float") / 255.0
                     resized_face = np.expand_dims(resized_face, axis=0)
                     preds = model.predict(resized_face)[0]
-
+                    
                     if preds>0.8:
                         label = 'spoof'
                         FakeFlage=True
@@ -288,18 +332,24 @@ class Worker1(QThread):
                 ConvertToQtFormat = QImage(Image.data, Image.shape[1], Image.shape[0], QImage.Format_RGB888)
                 self.ImageUpdate.emit(ConvertToQtFormat)
                 if process_this_frame % 60 == 0 :
-                    predictions = predict(Image, model_path="trained_knn_modelOneShot1.clf") 
+                    predictions = predict(Image, model_path="trained_knn_modelOneShot1.clf")        
+                    if predictions:
+                        self.sendinfo.emit()
+                
+
                 Image= show_prediction_labels_on_image(Image, predictions)         
                 path='./images/train/ahmed.3/img (1).jpeg'
 
                 
-                print('here')
+                
                 print(predictions[0][0])
                 endtimer = time.time()
                 fps = 1/(endtimer-timer)
                 cv2.putText(Image,f'FPS:{int(fps)}',(10,10),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),2)
                 ConvertToQtFormat = QImage(Image.data, Image.shape[1], Image.shape[0], QImage.Format_RGB888)
                 self.getinfo1.emit(predictions[0][0],path)
+                
+                print('here')
                 self.ImageUpdate.emit(ConvertToQtFormat)
             
                 """if FakeFlage==True :   
@@ -318,7 +368,7 @@ class Worker1(QThread):
                 
                 #FlippedImage = cv2.flip(Image,1)
 
-
+                #self.sendinfo.disconnect()
             except Exception as e:
                 pass        
 
