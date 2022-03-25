@@ -236,7 +236,7 @@ class MainWindow(QWidget):
         #self.win.ui=Ui_Dialog()
         #self.ui.setupUi(self.win)
         #self.win.show()
-        self.win.popup("test","test","test","test")
+        self.win.popup("./images/train/ahmed.3/img (1).jpeg","test","test","test","test")
         QTimer.singleShot(3000,self.win.close)
         #self.Worker1.sendinfo.disconnect()        
         
@@ -254,10 +254,10 @@ class popupScreen(QDialog):
         #self.w1.sendinfo.connect(self.popup)
         #self.show()
         #self.w1.sendinfo.disconnect()
-    def popup(self,name,empID,dep,title):
-        #empphoto=QPixmap(str(img))
-        #self.ui.EmpPhoto.setPixmap(empphoto)
-        #self.ui.EmpPhoto.setScaledContents(True)
+    def popup(self,img,name,empID,dep,title):
+        empphoto=QPixmap(img)
+        self.ui.EmpPhoto.setPixmap(empphoto)
+        self.ui.EmpPhoto.setScaledContents(True)
         #
         self.ui.EmpName.setText(str(name))
         self.ui.EmpID.setText(str(empID))
