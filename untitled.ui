@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1216</width>
+    <height>803</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QLabel" name="feed">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>0</y>
+     <width>870</width>
+     <height>760</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>TextLabel</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="EmpID">
+   <property name="geometry">
+    <rect>
+     <x>1050</x>
+     <y>120</y>
+     <width>47</width>
+     <height>13</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>EmpID</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="EmpPhoto">
+   <property name="geometry">
+    <rect>
+     <x>940</x>
+     <y>60</y>
+     <width>81</width>
+     <height>91</height>
+    </rect>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>EmpPhoto</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="EmpName">
+   <property name="geometry">
+    <rect>
+     <x>1050</x>
+     <y>90</y>
+     <width>47</width>
+     <height>13</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>EmpName</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
