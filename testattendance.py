@@ -23,6 +23,7 @@ from imutils.video import VideoStream
 import threading
 from ui_untitled import Ui_Form
 from ui_notfi import Ui_Dialog
+import sqlite3
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import model_from_json
 
@@ -227,18 +228,32 @@ class MainWindow(QWidget):
         Id=predictions.split('.')[1]
         self.ui.EmpName.setText(name)
         self.ui.EmpID.setText(Id)
-        empphoto=QPixmap(img)
+        empphoto=QPixmap(self.ph)
         self.ui.EmpPhoto.setPixmap(empphoto)
         self.ui.EmpPhoto.setScaledContents(True)
         
-    def openscreen(self):
+    def openscreen(self,predictions):
         self.win=popupScreen()
-        #self.win.ui=Ui_Dialog()
-        #self.ui.setupUi(self.win)
-        #self.win.show()
-        self.win.popup("./images/train/ahmed.3/img (1).jpeg","test","test","test","test")
-        QTimer.singleShot(3000,self.win.close)
-        #self.Worker1.sendinfo.disconnect()        
+
+        conn = sqlite3.connect("./DataBaseTabletest.db") 
+        conn.text_factory=str
+        cursor = conn.cursor()
+
+        name=predictions.split('.')[0]
+        Id=predictions.split('.')[1]
+        
+        cursor.execute("select Emp_Photo from Employees where Emp_ID = (?);", (Id,))
+        result = cursor.fetchone()
+        self.ph=result[0]
+        #ph_str=[r[0] for r in result]
+        #print(ph_str)
+        
+        self.win.popup(self.ph,"test","test",predictions)
+        QTimer.singleShot(2000,self.win.close)
+        #self.Worker1.sendinfo.disconnect()     
+
+
+
         
         
 
@@ -254,33 +269,25 @@ class popupScreen(QDialog):
         #self.w1.sendinfo.connect(self.popup)
         #self.show()
         #self.w1.sendinfo.disconnect()
-    def popup(self,img,name,empID,dep,title):
+    def popup(self,img,dep,title,predictions):
         empphoto=QPixmap(img)
         self.ui.EmpPhoto.setPixmap(empphoto)
         self.ui.EmpPhoto.setScaledContents(True)
         #
+        name=predictions.split('.')[0]
+        empID=predictions.split('.')[1]
         self.ui.EmpName.setText(str(name))
         self.ui.EmpID.setText(str(empID))
         self.ui.EmpDep.setText(str(dep))
         self.ui.EmpJobTitle.setText(str(title))
         self.show()
         
-        
-        
-        
-        
-        
-
-
-    
-    
-
      
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
     signal1= pyqtSignal(str,str,str)
     getinfo1=pyqtSignal(str,str)
-    sendinfo=pyqtSignal()
+    sendinfo=pyqtSignal(str)
     
     def run(self):
         self.ThreadActive = True
@@ -290,7 +297,7 @@ class Worker1(QThread):
         video_capture=cv2.VideoCapture(0)
         video_capture.set(cv2.CAP_PROP_FPS, 60) 
         fresh = FreshestFrame(video_capture) 
-        process_this_frame=59
+        process_this_frame=39
         
         while True:
             try:
@@ -305,52 +312,48 @@ class Worker1(QThread):
                 #
                 
                 faces = face_cascade.detectMultiScale(gray,1.3,5)
-  
+                process_this_frame = process_this_frame + 1
                 for (x,y,w,h)in faces:
                     face=Image[y-5:y+h+5,x-5:x+w+5]
                     resized_face=cv2.resize(face,(160,160))
                     resized_face = resized_face.astype("float") / 255.0
                     resized_face = np.expand_dims(resized_face, axis=0)
                     preds = model.predict(resized_face)[0]
-                    
+                    if process_this_frame % 40 == 0 :
+                        predictions = predict(Image, model_path="trained_knn_modelOneShot1.clf")        
+                        if predictions:
+                            self.sendinfo.emit(predictions[0][0])
+                            #Image= show_prediction_labels_on_image(Image, predictions)
+                    cv2.putText(Image, predictions[0][0], (x,w),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+                    cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 255, 0), 2)
                     if preds>0.8:
                         label = 'spoof'
                         FakeFlage=True
                         RealFlage=False
                         cv2.putText(Image, label, (x,y - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-                        cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 0, 255), 2)
+                        #cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 0, 255), 2)
                     else:
                         label = 'real'
                         FakeFlage=False
                         RealFlage=True
                         cv2.putText(Image, label, (x,y - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                        cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 255, 0), 2)
+                        #cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 255, 0), 2)
                 
-
-
-                process_this_frame = process_this_frame + 1
                 ConvertToQtFormat = QImage(Image.data, Image.shape[1], Image.shape[0], QImage.Format_RGB888)
                 self.ImageUpdate.emit(ConvertToQtFormat)
-                if process_this_frame % 60 == 0 :
-                    predictions = predict(Image, model_path="trained_knn_modelOneShot1.clf")        
-                    if predictions:
-                        self.sendinfo.emit()
-                
-
-                Image= show_prediction_labels_on_image(Image, predictions)         
+            
+                         
                 path='./images/train/ahmed.3/img (1).jpeg'
-
-                
                 
                 print(predictions[0][0])
                 endtimer = time.time()
                 fps = 1/(endtimer-timer)
                 cv2.putText(Image,f'FPS:{int(fps)}',(10,10),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0),2)
                 ConvertToQtFormat = QImage(Image.data, Image.shape[1], Image.shape[0], QImage.Format_RGB888)
-                self.getinfo1.emit(predictions[0][0],path)
+                self.getinfo1.emit(predictions[0][0],path) 
                 
                 print('here')
-                self.ImageUpdate.emit(ConvertToQtFormat)
+                #self.ImageUpdate.emit(ConvertToQtFormat)
             
                 """if FakeFlage==True :   
                     Image= show_prediction_labels_on_image(Image, predictions)
@@ -365,10 +368,6 @@ class Worker1(QThread):
                 else:
                     pass
                 """
-                
-                #FlippedImage = cv2.flip(Image,1)
-
-                #self.sendinfo.disconnect()
             except Exception as e:
                 pass        
 
