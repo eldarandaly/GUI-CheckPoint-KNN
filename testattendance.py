@@ -23,6 +23,8 @@ import time
 import imutils
 from imutils.video import VideoStream
 import threading
+
+from torch import equal
 from ui_untitled import Ui_Form
 from ui_notfi import Ui_Dialog
 import sqlite3
@@ -285,9 +287,11 @@ class MainWindow(QWidget):
         cursor.execute("select Emp_Photo from Employees where Emp_ID = (?);", (Id,))
         result = cursor.fetchone()
         self.ph=result[0]
-
-        self.win.popup(self.ph,"Dep Is Here","Job Title Is Here",predictions)
-        QTimer.singleShot(2000,self.win.close)
+        if self.ph is not None:
+            self.win.popup(self.ph,"Dep Is Here","Job Title Is Here",predictions)
+            QTimer.singleShot(2000,self.win.close)
+        else:
+            pass
         #self.Worker1.SendInfoToPopUpScreen.disconnect()     
 
 
@@ -354,17 +358,22 @@ class Worker1(QThread):
                     resized_face = np.expand_dims(resized_face, axis=0)
                     preds = model.predict(resized_face)[0]
                     if process_this_frame % 40 == 0 :
-                        predictions = predict(Image, model_path="trained_knn_modelOneShot1.clf")      
-                        if predictions:
-                            self.SendInfoToPopUpScreen.emit(predictions[0][0])
-                            self.SendInfoToMainScreen.emit(predictions[0][0],counter) 
-                            counter+=1
-                            if counter==6:
-                                counter=0
-                            #Image= show_prediction_labels_on_image(Image, predictions)
+                        predictions = predict(Image, model_path="trained_knn_modelOneShot3011.clf")      
+                        #if predictions:
+                    predictionsStr=predictions[0][0]
+                    Id=predictionsStr.split('.')[1]
                     
-                    cv2.putText(Image, predictions[0][0], (x,w),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-                    cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 255, 0), 2)
+                    if Id not in predictionsList:
+                        predictionsList.append(Id)
+                        self.SendInfoToPopUpScreen.emit(predictions[0][0])
+                        self.SendInfoToMainScreen.emit(predictions[0][0],counter) 
+                        counter+=1
+                        if counter==6:
+                            counter=0
+                                #Image= show_prediction_labels_on_image(Image, predictions)
+                       
+                        cv2.putText(Image, predictions[0][0], (x,w),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+                        cv2.rectangle(Image, (x, y), (x+w,y+h),(0, 255, 0), 2)
                     if preds>0.8:
                         label = 'spoof'
                         FakeFlage=True

@@ -117,7 +117,7 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     return knn_clf
 
 
-def predict(X_frame, knn_clf=None, model_path=None, distance_threshold=0.5):
+def predict(X_frame, knn_clf=None, model_path=None, distance_threshold=0.4):
     """
     Recognizes faces in given image using a trained KNN classifier
 
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     x=input("enter t for training or s to start\n")
     if x=='t':
         print("Training KNN classifier...")
-        classifier = train("images/train", model_save_path="trained_knn_modelOneShot1.clf", n_neighbors=1)
+        classifier = train("images/train", model_save_path="trained_knn_modelOneShot3011.clf", n_neighbors=2)
         print("Training complete!")
     elif x=='s':
         # process one frame in every 30 frames for speed
